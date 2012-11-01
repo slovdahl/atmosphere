@@ -53,14 +53,7 @@
 package org.atmosphere.cpr;
 
 
-import org.apache.catalina.CometEvent;
-import org.apache.catalina.CometProcessor;
-import org.atmosphere.container.JBossWebCometSupport;
-import org.atmosphere.container.Tomcat7CometSupport;
-import org.atmosphere.container.TomcatCometSupport;
 import org.atmosphere.di.ServletContextProvider;
-import org.jboss.servlet.http.HttpEvent;
-import org.jboss.servlet.http.HttpEventServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,7 +144,7 @@ import java.io.IOException;
  *
  * @author Jeanfrancois Arcand
  */
-public class AtmosphereServlet extends HttpServlet implements CometProcessor, HttpEventServlet, ServletContextProvider, org.apache.catalina.comet.CometProcessor {
+public class AtmosphereServlet extends HttpServlet implements ServletContextProvider {
 
     protected static final Logger logger = LoggerFactory.getLogger(AtmosphereServlet.class);
     protected AtmosphereFramework framework;
@@ -290,106 +283,6 @@ public class AtmosphereServlet extends HttpServlet implements CometProcessor, Ht
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res)
             throws IOException, ServletException {
-        framework.doCometSupport(AtmosphereRequest.wrap(req), AtmosphereResponse.wrap(res));
-    }
-
-    /**
-     * Hack to support Tomcat AIO like other WebServer. This method is invoked
-     * by Tomcat when it detect a {@link Servlet} implements the interface
-     * {@link CometProcessor} without invoking {@link Servlet#service}
-     *
-     * @param cometEvent the {@link CometEvent}
-     * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
-     */
-    public void event(CometEvent cometEvent) throws IOException, ServletException {
-        HttpServletRequest req = cometEvent.getHttpServletRequest();
-        HttpServletResponse res = cometEvent.getHttpServletResponse();
-        req.setAttribute(TomcatCometSupport.COMET_EVENT, cometEvent);
-
-        if (!framework.getAsyncSupport().supportWebSocket()) {
-            if (!framework.isCometSupportSpecified && !framework.isCometSupportConfigured.getAndSet(true)) {
-                synchronized (framework.asyncSupport) {
-                    if (!framework.asyncSupport.getClass().equals(TomcatCometSupport.class)) {
-                        AsyncSupport current = framework.asyncSupport;
-                        logger.warn("TomcatCometSupport is enabled, switching to it");
-                        framework.asyncSupport = new TomcatCometSupport(framework.config);
-                        if(current instanceof AsynchronousProcessor) {
-                            ((AsynchronousProcessor)current).shutdown();
-                        }
-                        framework.asyncSupport.init(framework.config.getServletConfig());
-                    }
-                }
-            }
-        }
-
-        framework.doCometSupport(AtmosphereRequest.wrap(req), AtmosphereResponse.wrap(res));
-
-        String transport = cometEvent.getHttpServletRequest().getParameter(HeaderConfig.X_ATMOSPHERE_TRANSPORT);
-        if (transport != null && transport.equalsIgnoreCase(HeaderConfig.WEBSOCKET_TRANSPORT)) {
-            cometEvent.close();
-        }
-    }
-
-    /**
-     * Hack to support Tomcat 7 AIO
-     */
-    public void event(org.apache.catalina.comet.CometEvent cometEvent) throws IOException, ServletException {
-        HttpServletRequest req = cometEvent.getHttpServletRequest();
-        HttpServletResponse res = cometEvent.getHttpServletResponse();
-        req.setAttribute(Tomcat7CometSupport.COMET_EVENT, cometEvent);
-
-        if (!framework.getAsyncSupport().supportWebSocket()) {
-            if (!framework.isCometSupportSpecified && !framework.isCometSupportConfigured.getAndSet(true)) {
-                synchronized (framework.asyncSupport) {
-                    if (!framework.asyncSupport.getClass().equals(Tomcat7CometSupport.class)) {
-                        AsyncSupport current = framework.asyncSupport;
-                        logger.warn("TomcatCometSupport7 is enabled, switching to it");
-                        framework.asyncSupport = new Tomcat7CometSupport(framework.config);
-                        if(current instanceof AsynchronousProcessor) {
-                            ((AsynchronousProcessor)current).shutdown();
-                        }
-                        framework.asyncSupport.init(framework.config.getServletConfig());
-                    }
-                }
-            }
-        }
-
-        framework.doCometSupport(AtmosphereRequest.wrap(req), AtmosphereResponse.wrap(res));
-
-        String transport = cometEvent.getHttpServletRequest().getParameter(HeaderConfig.X_ATMOSPHERE_TRANSPORT);
-        if (transport != null && transport.equalsIgnoreCase(HeaderConfig.WEBSOCKET_TRANSPORT)) {
-            cometEvent.close();
-        }
-    }
-
-    /**
-     * Hack to support JBossWeb AIO like other WebServer. This method is invoked
-     * by Tomcat when it detect a {@link Servlet} implements the interface
-     * {@link HttpEventServlet} without invoking {@link Servlet#service}
-     *
-     * @param httpEvent the {@link CometEvent}
-     * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
-     */
-    public void event(HttpEvent httpEvent) throws IOException, ServletException {
-        HttpServletRequest req = httpEvent.getHttpServletRequest();
-        HttpServletResponse res = httpEvent.getHttpServletResponse();
-        req.setAttribute(JBossWebCometSupport.HTTP_EVENT, httpEvent);
-
-        if (!framework.isCometSupportSpecified && !framework.isCometSupportConfigured.getAndSet(true)) {
-            synchronized (framework.asyncSupport) {
-                if (!framework.asyncSupport.getClass().equals(JBossWebCometSupport.class)) {
-                    AsyncSupport current = framework.asyncSupport;
-                    logger.warn("JBossWebCometSupport is enabled, switching to it");
-                    framework.asyncSupport = new JBossWebCometSupport(framework.config);
-                    if(current instanceof AsynchronousProcessor) {
-                        ((AsynchronousProcessor)current).shutdown();
-                    }
-                    framework.asyncSupport.init(framework.config.getServletConfig());
-                }
-            }
-        }
         framework.doCometSupport(AtmosphereRequest.wrap(req), AtmosphereResponse.wrap(res));
     }
 
