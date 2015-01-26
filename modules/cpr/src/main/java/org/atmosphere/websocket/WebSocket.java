@@ -264,7 +264,7 @@ public abstract class WebSocket extends AtmosphereInterceptorWriter {
 
     @Override
     public void close(AtmosphereResponse r) throws IOException {
-        logger.trace("WebSocket.close() for {}", uuid);
+        logger.trace("WebSocket.close()");
 
         try {
             // Never trust underlying server.
