@@ -621,7 +621,7 @@ public class DefaultWebSocketProcessor implements WebSocketProcessor, Serializab
                                 @Override
                                 public Object call() throws Exception {
                                     executeClose(webSocket, 1005);
-                                    finish(webSocket, resource, r, s, !allowedToClose);
+                                    finish(webSocket, resource, r, s, allowedToClose);
                                     return null;
                                 }
                             }, ff ? (closingTime == 0 ? 1000 : closingTime) : closingTime, TimeUnit.MILLISECONDS);
@@ -638,7 +638,7 @@ public class DefaultWebSocketProcessor implements WebSocketProcessor, Serializab
                 }
             } finally {
                 if (completeLifecycle) {
-                    finish(webSocket, resource, r, s, !allowedToClose);
+                    finish(webSocket, resource, r, s, allowedToClose);
                 }
             }
         }
@@ -649,7 +649,7 @@ public class DefaultWebSocketProcessor implements WebSocketProcessor, Serializab
         return closeCode < 1001 || closeCode > 1004 ? true : false;
     }
 
-    private void finish(WebSocket webSocket, AtmosphereResource resource, AtmosphereRequest r, AtmosphereResponse s, boolean closeWebSocket) {
+    private void finish(WebSocket webSocket, AtmosphereResource resource, AtmosphereRequest r, AtmosphereResponse s, boolean allowedToClose) {
         // Don't take any risk in case something goes wrong and remove the associated resource.
         framework.atmosphereFactory().remove(resource.uuid());
         if (webSocket != null) {
@@ -657,7 +657,7 @@ public class DefaultWebSocketProcessor implements WebSocketProcessor, Serializab
                 r.setAttribute(WebSocket.CLEAN_CLOSE, Boolean.TRUE);
                 webSocket.resource(null);
 
-                if (closeWebSocket) webSocket.close(s);
+                if (allowedToClose) webSocket.close(s);
             } catch (IOException e) {
                 logger.trace("", e);
             }
